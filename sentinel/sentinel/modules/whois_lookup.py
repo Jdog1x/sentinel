@@ -1,4 +1,4 @@
-"""
+﻿"""
 sentinel/modules/whois_lookup.py
 WHOIS registration data.
 """

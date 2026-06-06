@@ -1,6 +1,6 @@
-"""
+ï»¿"""
 sentinel/llm/provider.py
-Unified LLM interface — Ollama / Anthropic / OpenAI behind one call.
+Unified LLM interface â€” Ollama / Anthropic / OpenAI behind one call.
 """
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from sentinel.core.config import config
 
 ANALYSIS_SYSTEM = """You are SENTINEL, an expert penetration tester and security analyst.
 You analyze recon scan data and produce structured vulnerability findings.
-Respond ONLY with valid JSON — no markdown fences, no preamble, no commentary.
+Respond ONLY with valid JSON â€” no markdown fences, no preamble, no commentary.
 
 Your JSON must follow this exact schema:
 {

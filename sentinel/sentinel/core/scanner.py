@@ -1,6 +1,6 @@
-"""
+﻿"""
 sentinel/core/scanner.py
-Scan orchestrator � chains modules, stores results, calls LLM analysis.
+Scan orchestrator — chains modules, stores results, calls LLM analysis.
 """
 from __future__ import annotations
 

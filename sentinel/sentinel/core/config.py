@@ -1,6 +1,6 @@
-"""
+﻿"""
 sentinel/core/config.py
-Centralised configuration � reads .env, validates, exposes typed settings.
+Centralised configuration — reads .env, validates, exposes typed settings.
 """
 from __future__ import annotations
 

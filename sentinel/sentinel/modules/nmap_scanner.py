@@ -1,6 +1,6 @@
-"""
+ï»¿"""
 sentinel/modules/nmap_scanner.py
-Wrapper around nmap — port scan, service/version detection.
+Wrapper around nmap â€” port scan, service/version detection.
 """
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ class NmapResult:
 
 def run(target: str, fast: bool = False) -> NmapResult:
     if not shutil.which("nmap"):
-        return NmapResult(target=target, error="nmap not found — install from https://nmap.org")
+        return NmapResult(target=target, error="nmap not found â€” install from https://nmap.org")
     args = ["nmap", "-T4", "--open"]
     if fast:
         args += ["-F"]

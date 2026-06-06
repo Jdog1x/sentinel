@@ -1,6 +1,6 @@
-"""
+﻿"""
 sentinel/modules/dns_enum.py
-DNS enumeration � A, MX, NS, TXT, SOA, CNAME + subdomain brute-force.
+DNS enumeration — A, MX, NS, TXT, SOA, CNAME + subdomain brute-force.
 """
 from __future__ import annotations
 

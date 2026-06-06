@@ -1,4 +1,4 @@
-"""
+ï»¿"""
 sentinel/cli.py
 SENTINEL command-line interface.
 """
@@ -14,27 +14,21 @@ console = Console()
 
 BANNER = """
 [bold cyan]
-  ¦¦¦¦¦¦¦+¦¦¦¦¦¦¦+¦¦¦+   ¦¦+¦¦¦¦¦¦¦¦+¦¦+¦¦¦+   ¦¦+¦¦¦¦¦¦¦+¦¦+
-  ¦¦+----+¦¦+----+¦¦¦¦+  ¦¦¦+--¦¦+--+¦¦¦¦¦¦¦+  ¦¦¦¦¦+----+¦¦¦
-  ¦¦¦¦¦¦¦+¦¦¦¦¦+  ¦¦+¦¦+ ¦¦¦   ¦¦¦   ¦¦¦¦¦+¦¦+ ¦¦¦¦¦¦¦¦+  ¦¦¦
-  +----¦¦¦¦¦+--+  ¦¦¦+¦¦+¦¦¦   ¦¦¦   ¦¦¦¦¦¦+¦¦+¦¦¦¦¦+--+  ¦¦¦
-  ¦¦¦¦¦¦¦¦¦¦¦¦¦¦¦+¦¦¦ +¦¦¦¦¦   ¦¦¦   ¦¦¦¦¦¦ +¦¦¦¦¦¦¦¦¦¦¦¦+¦¦¦¦¦¦¦+
-  +------++------++-+  +---+   +-+   +-++-+  +---++------++------+
+  SENTINEL - AI-Powered Pentest Recon & Report Platform
 [/bold cyan]
-[dim]  AI-Powered Pentest Recon & Report Platform[/dim]
 """
 
 
 @click.group()
 @click.version_option("1.0.0", prog_name="sentinel")
 def cli():
-    """SENTINEL — AI-Powered Pentest Recon & Report Platform"""
+    """SENTINEL -- AI-Powered Pentest Recon & Report Platform"""
     pass
 
 
 @cli.command()
 @click.argument("target")
-@click.option("--fast",    is_flag=True, help="Quick scan — top-100 ports")
+@click.option("--fast",    is_flag=True, help="Quick scan -- top-100 ports")
 @click.option("--backend", type=click.Choice(["ollama", "anthropic", "openai"]), default=None)
 @click.option("--report",  is_flag=True, help="Auto-generate PDF after scan")
 def scan(target: str, fast: bool, backend: str | None, report: bool):

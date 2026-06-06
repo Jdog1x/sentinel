@@ -1,6 +1,6 @@
-"""
+ï»¿"""
 sentinel/api/app.py
-Flask REST API — scans, findings, AI chat, report download.
+Flask REST API â€” scans, findings, AI chat, report download.
 """
 from __future__ import annotations
 
@@ -115,7 +115,7 @@ def create_app() -> Flask:
             scan = db.query(Scan).filter(Scan.id == scan_id).first()
             db.close()
             if scan:
-                ctx = f"\n\n[SCAN CONTEXT — target: {scan.target}]\n"
+                ctx = f"\n\n[SCAN CONTEXT â€” target: {scan.target}]\n"
                 if scan.raw_results and scan.raw_results.get("analysis"):
                     ctx += f"Summary: {scan.raw_results[\"analysis\"].get(\"executive_summary\", \"\")}\n"
                 messages = list(messages)

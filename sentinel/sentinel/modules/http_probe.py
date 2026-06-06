@@ -1,6 +1,6 @@
-"""
+﻿"""
 sentinel/modules/http_probe.py
-HTTP/HTTPS fingerprinting � headers, security audit, tech detection.
+HTTP/HTTPS fingerprinting — headers, security audit, tech detection.
 """
 from __future__ import annotations
 
