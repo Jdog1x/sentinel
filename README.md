@@ -11,16 +11,16 @@
 ## 📸 Screenshots
 
 ### Dashboard
-![Dashboard](sentinel/docs/Screenshot%20one.png)
+![Dashboard](sentinel/docs/Screenshot1.png)
 
 ### New Scan — LLM Backend Selection
-![New Scan](sentinel/docs/Screenshot%20four.png)
+![New Scan](sentinel/docs/Screenshot4.png)
 
 ### Scan Results
-![Scan Results](sentinel/docs/Screenshot%20two.png)
+![Scan Results](sentinel/docs/Screenshot2.png)
 
 ### AI Vulnerability Analysis
-![AI Vulnerability Analysis](sentinel/docs/Screenshot%20three.png)
+![AI Vulnerability Analysis](sentinel/docs/Screenshot3.png)
 
 ---
 
