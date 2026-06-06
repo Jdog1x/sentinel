@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+dist/
+build/
+
+# Environment
+.env
+*.db
+
+# Reports output
+reports/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# VS Code
+.vscode/
