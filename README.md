@@ -11,13 +11,16 @@
 ## 📸 Screenshots
 
 ### Dashboard
-![Dashboard](docs/Screenshot%20one.png)
+![Dashboard](sentinel/docs/Screenshot%20one.png)
 
-### Findings Panel
-![Findings](docs/Screenshot%20two.png)
+### New Scan — LLM Backend Selection
+![New Scan](sentinel/docs/Screenshot%20four.png)
 
-### AI Chat
-![AI Chat](docs/Screenshot%20three.png)
+### Scan Results
+![Scan Results](sentinel/docs/Screenshot%20two.png)
+
+### AI Vulnerability Analysis
+![AI Vulnerability Analysis](sentinel/docs/Screenshot%20three.png)
 
 ---
 
