@@ -24,14 +24,14 @@
 
 ---
 
-## ✨ Features
+## Features
 
-- 🔍 **Autonomous Recon** — Chains nmap, whois, DNS enumeration, and HTTP fingerprinting
-- 🤖 **AI Analysis Engine** — LLM triages findings and prioritizes attack surface
-- 🌐 **Web Dashboard** — Real-time scan monitoring and finding browser
-- 📄 **Report Generator** — One-click professional PDF pentest reports
-- 🔌 **Multi-LLM Backend** — Ollama (local), Anthropic Claude, or OpenAI
-- 🧩 **Plugin Architecture** — Extend with new tools via simple adapters
+- **Autonomous Recon** — Chains nmap, whois, DNS enumeration, and HTTP fingerprinting
+- **AI Analysis Engine** — LLM triages findings and prioritizes attack surface
+- **Web Dashboard** — Real-time scan monitoring and finding browser
+- **Report Generator** — One-click professional PDF pentest reports
+- **Multi-LLM Backend** — Ollama (local), Anthropic Claude, or OpenAI
+- **Plugin Architecture** — Extend with new tools via simple adapters
 
 ---
 
