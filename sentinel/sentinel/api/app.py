@@ -25,8 +25,23 @@ def create_app() -> Flask:
 
     @app.get("/api/scans")
     def list_scans():
-        orchestrator = ScanOrchestrator()
-        return jsonify([s.to_dict() for s in orchestrator.list_scans()])
+        db = SessionLocal()
+        scans = db.query(Scan).order_by(Scan.created_at.desc()).all()
+        result = []
+        for s in scans:
+            findings = list(s.findings)
+            result.append({
+                "id":          s.id,
+                "target":      s.target,
+                "status":      s.status,
+                "llm_backend": s.llm_backend,
+                "raw_results": s.raw_results,
+                "created_at":  s.created_at.isoformat() if s.created_at else None,
+                "updated_at":  s.updated_at.isoformat() if s.updated_at else None,
+                "findings":    [f.to_dict() for f in findings],
+            })
+        db.close()
+        return jsonify(result)
 
     @app.post("/api/scans")
     def create_scan():
@@ -36,13 +51,21 @@ def create_app() -> Flask:
         fast    = data.get("fast", False)
         if not target:
             return jsonify({"error": "target is required"}), 400
-        db   = SessionLocal()
         from sentinel.core.models import ScanStatus
+        db   = SessionLocal()
         scan = Scan(target=target, status=ScanStatus.PENDING, llm_backend=backend)
         db.add(scan)
         db.commit()
         db.refresh(scan)
-        scan_dict = scan.to_dict()
+        scan_dict = {
+            "id":          scan.id,
+            "target":      scan.target,
+            "status":      scan.status,
+            "llm_backend": scan.llm_backend,
+            "raw_results": scan.raw_results,
+            "created_at":  scan.created_at.isoformat() if scan.created_at else None,
+            "findings":    [],
+        }
         db.close()
         def _run():
             ScanOrchestrator(llm_backend=backend).run_scan(target, fast=fast)
@@ -52,11 +75,23 @@ def create_app() -> Flask:
     @app.get("/api/scans/<scan_id>")
     def get_scan(scan_id: str):
         db   = SessionLocal()
-        scan = db.query(Scan).filter(Scan.id == scan_id).first()
-        db.close()
-        if not scan:
+        s = db.query(Scan).filter(Scan.id == scan_id).first()
+        if not s:
+            db.close()
             return jsonify({"error": "scan not found"}), 404
-        return jsonify(scan.to_dict())
+        findings = list(s.findings)
+        result = {
+            "id":          s.id,
+            "target":      s.target,
+            "status":      s.status,
+            "llm_backend": s.llm_backend,
+            "raw_results": s.raw_results,
+            "created_at":  s.created_at.isoformat() if s.created_at else None,
+            "updated_at":  s.updated_at.isoformat() if s.updated_at else None,
+            "findings":    [f.to_dict() for f in findings],
+        }
+        db.close()
+        return jsonify(result)
 
     @app.delete("/api/scans/<scan_id>")
     def delete_scan(scan_id: str):
@@ -73,12 +108,13 @@ def create_app() -> Flask:
     @app.post("/api/scans/<scan_id>/report")
     def create_report(scan_id: str):
         db   = SessionLocal()
-        scan = db.query(Scan).filter(Scan.id == scan_id).first()
-        if not scan:
+        s = db.query(Scan).filter(Scan.id == scan_id).first()
+        if not s:
             db.close()
             return jsonify({"error": "scan not found"}), 404
         try:
-            pdf_path = generate_pdf(scan)
+            findings = list(s.findings)
+            pdf_path = generate_pdf(s)
             report   = Report(scan_id=scan_id, file_path=str(pdf_path))
             db.add(report)
             db.commit()
@@ -97,10 +133,10 @@ def create_app() -> Flask:
         db.close()
         if not report:
             return jsonify({"error": "not found"}), 404
-        path = Path(report.file_path)
-        if not path.exists():
+        p = Path(report.file_path)
+        if not p.exists():
             return jsonify({"error": "file missing"}), 404
-        return send_file(str(path), as_attachment=True, download_name=path.name)
+        return send_file(str(p), as_attachment=True, download_name=p.name)
 
     @app.post("/api/chat")
     def chat():
@@ -113,13 +149,14 @@ def create_app() -> Flask:
         if scan_id:
             db   = SessionLocal()
             scan = db.query(Scan).filter(Scan.id == scan_id).first()
-            db.close()
             if scan:
-                ctx = f"\n\n[SCAN CONTEXT — target: {scan.target}]\n"
+                ctx = f"\n\n[SCAN CONTEXT - target: {scan.target}]\n"
                 if scan.raw_results and scan.raw_results.get("analysis"):
-                    ctx += f"Summary: {scan.raw_results[\"analysis\"].get(\"executive_summary\", \"\")}\n"
+                    summary = scan.raw_results.get("analysis", {}).get("executive_summary", "")
+                    ctx += f"Summary: {summary}\n"
                 messages = list(messages)
                 messages[-1]["content"] = ctx + messages[-1]["content"]
+            db.close()
         try:
             provider = get_provider(backend)
             reply    = provider.chat(messages)
