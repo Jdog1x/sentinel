@@ -1,4 +1,4 @@
-﻿"""
+"""
 sentinel/cli.py
 SENTINEL command-line interface.
 """
@@ -118,15 +118,21 @@ def serve(port: int, host: str):
 
 
 def _print_summary(scan):
-    analysis = scan.raw_results.get("analysis", {}) if scan.raw_results else {}
+    from sentinel.core.models import SessionLocal, Scan as ScanModel
+    db = SessionLocal()
+    s = db.query(ScanModel).filter(ScanModel.id == scan.id).first()
+    findings = list(s.findings) if s else []
+    raw = s.raw_results or {} if s else {}
+    db.close()
+    analysis = raw.get("analysis", {})
     console.print(Panel(
-        f"[bold]Target:[/bold] {scan.target}\n"
-        f"[bold]Status:[/bold] [green]{scan.status.value.upper()}[/green]\n"
+        f"[bold]Target:[/bold] {s.target}\n"
+        f"[bold]Status:[/bold] [green]{s.status.value.upper()}[/green]\n"
         f"[bold]Risk:[/bold]   [yellow]{analysis.get('risk_level', 'N/A').upper()}[/yellow]\n\n"
         f"{analysis.get('executive_summary', 'No summary available.')}",
         title="[bold cyan]Scan Complete", border_style="cyan",
     ))
-    if scan.findings:
+    if findings:
         table = Table(title="Findings", border_style="cyan", show_lines=True)
         table.add_column("#",        width=4)
         table.add_column("Severity", width=10)
@@ -137,7 +143,7 @@ def _print_summary(scan):
             "critical": "bold red", "high": "red",
             "medium": "yellow", "low": "blue", "info": "dim",
         }
-        for i, f in enumerate(scan.findings, 1):
+        for i, f in enumerate(findings, 1):
             sev = f.severity.value if f.severity else "info"
             table.add_row(
                 str(i),
@@ -147,7 +153,6 @@ def _print_summary(scan):
         console.print(table)
     else:
         console.print("[dim]No findings recorded.[/dim]")
-
 
 def _gen_report(scan_id: str):
     from sentinel.core.models import SessionLocal, Scan
