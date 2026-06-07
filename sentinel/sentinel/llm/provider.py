@@ -5,10 +5,15 @@ Unified LLM interface — Ollama / Anthropic / OpenAI behind one call.
 from __future__ import annotations
 
 import json
+from typing import List, Optional
 
 import httpx
+from pydantic import BaseModel, ValidationError, field_validator
 
 from sentinel.core.config import config
+
+_SEVERITIES = {"info", "low", "medium", "high", "critical"}
+_RISK_LEVELS = {"low", "medium", "high", "critical"}
 
 ANALYSIS_SYSTEM = """You are SENTINEL, an expert penetration tester and security analyst.
 You analyze recon scan data and produce structured vulnerability findings.
@@ -53,6 +58,62 @@ def _parse_json(raw: str) -> dict:
     return json.loads(text)
 
 
+class FindingSchema(BaseModel):
+    """One vulnerability finding, coerced into the shape the app expects."""
+    title: str = "Untitled Finding"
+    description: Optional[str] = None
+    severity: str = "info"
+    module: Optional[str] = None
+    evidence: Optional[str] = None
+    remediation: Optional[str] = None
+    cvss_score: Optional[str] = None
+
+    @field_validator("severity", mode="before")
+    @classmethod
+    def _norm_severity(cls, v: object) -> str:
+        s = str(v).strip().lower()
+        return s if s in _SEVERITIES else "info"
+
+    @field_validator("cvss_score", mode="before")
+    @classmethod
+    def _str_cvss(cls, v: object) -> Optional[str]:
+        return None if v is None else str(v)
+
+
+class AnalysisSchema(BaseModel):
+    """Full analysis payload returned by analyze(); fills/repairs missing fields."""
+    executive_summary: str = ""
+    risk_level: str = "low"
+    findings: List[FindingSchema] = []
+    attack_surface: List[str] = []
+    recommendations: List[str] = []
+
+    @field_validator("risk_level", mode="before")
+    @classmethod
+    def _norm_risk(cls, v: object) -> str:
+        r = str(v).strip().lower()
+        return r if r in _RISK_LEVELS else "low"
+
+
+def _parse_analysis(raw: str) -> dict:
+    """Parse and validate a model's analysis reply against the expected schema.
+
+    The model is asked for a fixed schema but isn't guaranteed to honour it, so
+    we coerce/repair the payload (defaulting missing fields, normalising bad
+    severities) instead of trusting the raw JSON downstream.
+    """
+    data = _parse_json(raw)
+    if not isinstance(data, dict):
+        data = {}
+    try:
+        return AnalysisSchema.model_validate(data).model_dump()
+    except ValidationError:
+        # Last resort: return a valid-but-empty analysis that notes the problem.
+        return AnalysisSchema(
+            executive_summary="Model returned data that did not match the expected schema."
+        ).model_dump()
+
+
 class OllamaProvider:
     def __init__(self) -> None:
         self._base = config.ollama_base_url
@@ -67,7 +128,7 @@ class OllamaProvider:
             ],
             "stream": False,
         }, timeout=120)
-        return _parse_json(r.json()["message"]["content"])
+        return _parse_analysis(r.json()["message"]["content"])
 
     def chat(self, messages: list[dict]) -> str:
         full = [{"role": "system", "content": CHAT_SYSTEM}] + messages
@@ -89,7 +150,7 @@ class AnthropicProvider:
             system=ANALYSIS_SYSTEM,
             messages=[{"role": "user", "content": _analysis_prompt(scan_data)}],
         )
-        return _parse_json(r.content[0].text)
+        return _parse_analysis(r.content[0].text)
 
     def chat(self, messages: list[dict]) -> str:
         r = self._client.messages.create(
@@ -114,7 +175,7 @@ class OpenAIProvider:
                 {"role": "user",   "content": _analysis_prompt(scan_data)},
             ],
         )
-        return _parse_json(r.choices[0].message.content)
+        return _parse_analysis(r.choices[0].message.content)
 
     def chat(self, messages: list[dict]) -> str:
         full = [{"role": "system", "content": CHAT_SYSTEM}] + messages

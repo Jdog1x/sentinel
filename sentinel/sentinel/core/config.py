@@ -46,6 +46,12 @@ class SentinelConfig(BaseModel):
     flask_port: int = Field(
         default_factory=lambda: int(os.getenv("FLASK_PORT", "5000"))
     )
+    cors_origins: str = Field(
+        default_factory=lambda: os.getenv("CORS_ORIGINS", "*")
+    )
+    http_verify_tls: bool = Field(
+        default_factory=lambda: os.getenv("HTTP_VERIFY_TLS", "false").lower() == "true"
+    )
     database_url: str = Field(
         default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///sentinel.db")
     )

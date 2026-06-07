@@ -20,7 +20,11 @@ from sentinel.reports.pdf_generator import generate as generate_pdf
 def create_app() -> Flask:
     app = Flask(__name__)
     app.secret_key = config.flask_secret_key
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    # CORS_ORIGINS is a comma-separated allowlist; "*" allows any origin (dev default).
+    origins = "*" if config.cors_origins.strip() == "*" else [
+        o.strip() for o in config.cors_origins.split(",") if o.strip()
+    ]
+    CORS(app, resources={r"/api/*": {"origins": origins}})
     init_db()
 
     @app.get("/api/scans")

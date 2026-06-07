@@ -10,6 +10,8 @@ from typing import Optional
 
 import httpx
 
+from sentinel.core.config import config
+
 SECURITY_HEADERS = [
     "Strict-Transport-Security",
     "Content-Security-Policy",
@@ -77,7 +79,11 @@ def run(target: str) -> HTTPResult:
     result = HTTPResult(target=target, url=target_url)
 
     try:
-        with httpx.Client(timeout=10, follow_redirects=True, verify=False,
+        # TLS verification is off by default (HTTP_VERIFY_TLS): recon often
+        # targets hosts with self-signed or expired certs that we still want
+        # to fingerprint. Enable verification via the env var when appropriate.
+        with httpx.Client(timeout=10, follow_redirects=True,
+                          verify=config.http_verify_tls,
                           headers={"User-Agent": "Sentinel/1.0 Security Scanner"}) as client:
             resp = client.get(target_url)
             result.status_code  = resp.status_code

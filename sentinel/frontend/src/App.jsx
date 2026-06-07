@@ -110,6 +110,13 @@ function ScanDetail({ scan, onClose, onRefresh }) {
   const [chatLoading, setChatLoading]     = useState(false);
   const analysis = scan?.raw_results?.analysis || {};
 
+  // Auto-refresh this panel while the scan is still in progress.
+  useEffect(() => {
+    if (["complete", "failed"].includes(scan?.status)) return;
+    const id = setInterval(onRefresh, 4000);
+    return () => clearInterval(id);
+  }, [scan?.status, onRefresh]);
+
   async function generateReport() {
     setReportLoading(true);
     try { const r = await api.createReport(scan.id); if (r.file_path) { alert(`Report saved: ${r.file_path}`); onRefresh(); } }
