@@ -10,6 +10,8 @@ const SEV = {
   info:     { color: "#888888", bg: "#1e2028", label: "INFO"     },
 };
 
+const RISK_COLORS = { low: "#00d4aa", medium: "#ffcc00", high: "#ff8800", critical: "#ff4444" };
+
 const api = {
   getScans:     ()       => fetch(`${API}/scans`).then(r => r.json()),
   getScan:      (id)     => fetch(`${API}/scans/${id}`).then(r => r.json()),
@@ -135,7 +137,7 @@ function ScanDetail({ scan, onClose, onRefresh }) {
               <h2 style={{ color: "#e6edf3", margin: 0, fontSize: 20, fontFamily: "monospace" }}>{scan.target}</h2>
               <div style={{ marginTop: 8, display: "flex", gap: 16 }}>
                 <StatusBadge status={scan.status} />
-                {analysis.risk_level && <span style={{ color: { low:"#00d4aa", medium:"#ffcc00", high:"#ff8800", critical:"#ff4444" }[analysis.risk_level] || "#888", fontSize: 11, fontFamily: "monospace", fontWeight: 700 }}>RISK: {analysis.risk_level?.toUpperCase()}</span>}
+                {analysis.risk_level && <span style={{ color: RISK_COLORS[analysis.risk_level] || "#888", fontSize: 11, fontFamily: "monospace", fontWeight: 700 }}>RISK: {analysis.risk_level?.toUpperCase()}</span>}
                 <span style={{ color: "#555", fontSize: 11 }}>{timeAgo(scan.created_at)}</span>
               </div>
             </div>
@@ -286,7 +288,7 @@ export default function App() {
                       <td style={{ padding: "14px 20px" }}><StatusBadge status={scan.status} /></td>
                       <td style={{ padding: "14px 20px" }}>
                         {scan.raw_results?.analysis?.risk_level
-                          ? <span style={{ color: { low:"#00d4aa", medium:"#ffcc00", high:"#ff8800", critical:"#ff4444" }[scan.raw_results.analysis.risk_level] || "#888", fontFamily: "monospace", fontSize: 12, fontWeight: 700 }}>{scan.raw_results.analysis.risk_level.toUpperCase()}</span>
+                          ? <span style={{ color: RISK_COLORS[scan.raw_results.analysis.risk_level] || "#888", fontFamily: "monospace", fontSize: 12, fontWeight: 700 }}>{scan.raw_results.analysis.risk_level.toUpperCase()}</span>
                           : <span style={{ color: "#555" }}>-</span>}
                       </td>
                       <td style={{ padding: "14px 20px", color: "#8b949e", fontSize: 12 }}>{scan.findings?.length || 0}</td>

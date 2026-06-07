@@ -2,24 +2,32 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
-venv/
-.venv/
+.eggs/
 dist/
 build/
 
-# Environment
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment & secrets
 .env
+
+# Databases
 *.db
+*.sqlite3
 
 # Generated reports (output dir only, not the source package)
 /reports/
 
 # Node
+node_modules/
 frontend/node_modules/
 frontend/dist/
 
-# VS Code
+# Editor / OS
 .vscode/
-
-# Sentinel egg
-sentinel.egg-info/
+.idea/
+.DS_Store
+Thumbs.db

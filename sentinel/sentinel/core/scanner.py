@@ -1,4 +1,4 @@
-﻿"""
+"""
 sentinel/core/scanner.py
 Scan orchestrator — chains modules, stores results, calls LLM analysis.
 """

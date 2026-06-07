@@ -1,4 +1,4 @@
-﻿"""
+"""
 sentinel/core/models.py
 SQLAlchemy ORM models for scans, findings, and reports.
 """

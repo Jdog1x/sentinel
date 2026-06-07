@@ -1,4 +1,4 @@
-﻿"""
+"""
 sentinel/modules/dns_enum.py
 DNS enumeration — A, MX, NS, TXT, SOA, CNAME + subdomain brute-force.
 """

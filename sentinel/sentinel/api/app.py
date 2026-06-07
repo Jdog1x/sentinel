@@ -1,4 +1,4 @@
-﻿"""
+"""
 sentinel/api/app.py
 Flask REST API — scans, findings, AI chat, report download.
 """
@@ -11,7 +11,7 @@ from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 
 from sentinel.core.config import config
-from sentinel.core.models import Report, Scan, SessionLocal, init_db
+from sentinel.core.models import Report, Scan, ScanStatus, SessionLocal, init_db
 from sentinel.core.scanner import ScanOrchestrator
 from sentinel.llm.provider import get_provider
 from sentinel.reports.pdf_generator import generate as generate_pdf
@@ -27,19 +27,7 @@ def create_app() -> Flask:
     def list_scans():
         db = SessionLocal()
         scans = db.query(Scan).order_by(Scan.created_at.desc()).all()
-        result = []
-        for s in scans:
-            findings = list(s.findings)
-            result.append({
-                "id":          s.id,
-                "target":      s.target,
-                "status":      s.status,
-                "llm_backend": s.llm_backend,
-                "raw_results": s.raw_results,
-                "created_at":  s.created_at.isoformat() if s.created_at else None,
-                "updated_at":  s.updated_at.isoformat() if s.updated_at else None,
-                "findings":    [f.to_dict() for f in findings],
-            })
+        result = [s.to_dict() for s in scans]
         db.close()
         return jsonify(result)
 
@@ -51,45 +39,28 @@ def create_app() -> Flask:
         fast    = data.get("fast", False)
         if not target:
             return jsonify({"error": "target is required"}), 400
-        from sentinel.core.models import ScanStatus
         db   = SessionLocal()
         scan = Scan(target=target, status=ScanStatus.PENDING, llm_backend=backend)
         db.add(scan)
         db.commit()
         db.refresh(scan)
-        scan_dict = {
-            "id":          scan.id,
-            "target":      scan.target,
-            "status":      scan.status,
-            "llm_backend": scan.llm_backend,
-            "raw_results": scan.raw_results,
-            "created_at":  scan.created_at.isoformat() if scan.created_at else None,
-            "findings":    [],
-        }
+        scan_dict = scan.to_dict()
         db.close()
+
         def _run():
             ScanOrchestrator(llm_backend=backend).run_scan(target, fast=fast)
+
         threading.Thread(target=_run, daemon=True).start()
         return jsonify(scan_dict), 202
 
     @app.get("/api/scans/<scan_id>")
     def get_scan(scan_id: str):
-        db   = SessionLocal()
+        db = SessionLocal()
         s = db.query(Scan).filter(Scan.id == scan_id).first()
         if not s:
             db.close()
             return jsonify({"error": "scan not found"}), 404
-        findings = list(s.findings)
-        result = {
-            "id":          s.id,
-            "target":      s.target,
-            "status":      s.status,
-            "llm_backend": s.llm_backend,
-            "raw_results": s.raw_results,
-            "created_at":  s.created_at.isoformat() if s.created_at else None,
-            "updated_at":  s.updated_at.isoformat() if s.updated_at else None,
-            "findings":    [f.to_dict() for f in findings],
-        }
+        result = s.to_dict()
         db.close()
         return jsonify(result)
 
@@ -107,13 +78,12 @@ def create_app() -> Flask:
 
     @app.post("/api/scans/<scan_id>/report")
     def create_report(scan_id: str):
-        db   = SessionLocal()
+        db = SessionLocal()
         s = db.query(Scan).filter(Scan.id == scan_id).first()
         if not s:
             db.close()
             return jsonify({"error": "scan not found"}), 404
         try:
-            findings = list(s.findings)
             pdf_path = generate_pdf(s)
             report   = Report(scan_id=scan_id, file_path=str(pdf_path))
             db.add(report)
@@ -173,4 +143,4 @@ def create_app() -> Flask:
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(host="0.0.0.0", port=5000, debug=config.flask_debug)
+    app.run(host="0.0.0.0", port=config.flask_port, debug=config.flask_debug)

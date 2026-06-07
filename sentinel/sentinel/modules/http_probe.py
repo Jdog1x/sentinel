@@ -1,4 +1,4 @@
-﻿"""
+"""
 sentinel/modules/http_probe.py
 HTTP/HTTPS fingerprinting — headers, security audit, tech detection.
 """

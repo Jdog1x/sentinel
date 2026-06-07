@@ -1,4 +1,4 @@
-﻿"""
+"""
 sentinel/modules/nmap_scanner.py
 Wrapper around nmap — port scan, service/version detection.
 """

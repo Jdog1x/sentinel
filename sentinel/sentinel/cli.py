@@ -107,14 +107,16 @@ def show_scan(scan_id: str):
 
 
 @cli.command("serve")
-@click.option("--port", default=5000)
+@click.option("--port", default=None, type=int, help="Port to bind (defaults to FLASK_PORT).")
 @click.option("--host", default="0.0.0.0")
-def serve(port: int, host: str):
+def serve(port: int | None, host: str):
     """Start the SENTINEL web API."""
     from sentinel.api.app import create_app
+    from sentinel.core.config import config
+    port = port or config.flask_port
     console.print(BANNER)
     console.print(f"[bold cyan]API running at http://{host}:{port}[/bold cyan]")
-    create_app().run(host=host, port=port, debug=False)
+    create_app().run(host=host, port=port, debug=config.flask_debug)
 
 
 def _print_summary(scan):
@@ -145,14 +147,16 @@ def _print_summary(scan):
         }
         for i, f in enumerate(findings, 1):
             sev = f.severity.value if f.severity else "info"
+            col = sev_colors.get(sev, "white")
             table.add_row(
                 str(i),
-                f"[{sev_colors.get(sev,'white')}]{sev.upper()}[/{sev_colors.get(sev,'white')}]",
+                f"[{col}]{sev.upper()}[/{col}]",
                 f.title, f.module or "-", f.cvss_score or "-",
             )
         console.print(table)
     else:
         console.print("[dim]No findings recorded.[/dim]")
+
 
 def _gen_report(scan_id: str):
     from sentinel.core.models import SessionLocal, Scan

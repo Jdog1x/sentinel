@@ -1,4 +1,4 @@
-﻿"""
+"""
 sentinel/core/config.py
 Centralised configuration — reads .env, validates, exposes typed settings.
 """
@@ -43,14 +43,14 @@ class SentinelConfig(BaseModel):
     flask_debug: bool = Field(
         default_factory=lambda: os.getenv("FLASK_DEBUG", "false").lower() == "true"
     )
+    flask_port: int = Field(
+        default_factory=lambda: int(os.getenv("FLASK_PORT", "5000"))
+    )
     database_url: str = Field(
         default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///sentinel.db")
     )
-    redis_url: str = Field(
-        default_factory=lambda: os.getenv("REDIS_URL", "redis://localhost:6379/0")
-    )
     report_output_dir: Path = Field(
-        default_factory=lambda: Path(os.getenv("REPORT_OUTPUT_DIR", "./reports"))
+        default_factory=lambda: Path(os.getenv("REPORTS_OUTPUT_DIR", "./reports"))
     )
 
     @field_validator("report_output_dir", mode="before")

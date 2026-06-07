@@ -1,10 +1,13 @@
-﻿"""
+"""
 sentinel/llm/provider.py
 Unified LLM interface — Ollama / Anthropic / OpenAI behind one call.
 """
 from __future__ import annotations
 
 import json
+
+import httpx
+
 from sentinel.core.config import config
 
 ANALYSIS_SYSTEM = """You are SENTINEL, an expert penetration tester and security analyst.
@@ -35,28 +38,38 @@ You help security professionals understand scan results, plan attacks, and remed
 Be precise, technical, and actionable. Format code blocks with triple backticks."""
 
 
+def _analysis_prompt(scan_data: dict) -> str:
+    return (
+        "Analyze this recon scan data and return structured findings:\n\n"
+        + json.dumps(scan_data, indent=2)
+    )
+
+
+def _parse_json(raw: str) -> dict:
+    """Parse a model's JSON reply, tolerating stray markdown fences."""
+    text = raw.strip()
+    if text.startswith("```"):
+        text = text.split("```", 2)[1].removeprefix("json").strip()
+    return json.loads(text)
+
+
 class OllamaProvider:
     def __init__(self) -> None:
-        import httpx
         self._base = config.ollama_base_url
         self._model = config.ollama_model
 
     def analyze(self, scan_data: dict) -> dict:
-        import httpx
-        prompt = f"Analyze this recon scan data and return structured findings:\n\n{json.dumps(scan_data, indent=2)}"
         r = httpx.post(f"{self._base}/api/chat", json={
             "model": self._model,
             "messages": [
                 {"role": "system", "content": ANALYSIS_SYSTEM},
-                {"role": "user",   "content": prompt},
+                {"role": "user",   "content": _analysis_prompt(scan_data)},
             ],
             "stream": False,
         }, timeout=120)
-        raw = r.json()["message"]["content"]
-        return json.loads(raw)
+        return _parse_json(r.json()["message"]["content"])
 
     def chat(self, messages: list[dict]) -> str:
-        import httpx
         full = [{"role": "system", "content": CHAT_SYSTEM}] + messages
         r = httpx.post(f"{self._base}/api/chat", json={
             "model": self._model, "messages": full, "stream": False,
@@ -71,13 +84,12 @@ class AnthropicProvider:
         self._model  = config.anthropic_model
 
     def analyze(self, scan_data: dict) -> dict:
-        prompt = f"Analyze this recon scan data and return structured findings:\n\n{json.dumps(scan_data, indent=2)}"
         r = self._client.messages.create(
             model=self._model, max_tokens=4096,
             system=ANALYSIS_SYSTEM,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[{"role": "user", "content": _analysis_prompt(scan_data)}],
         )
-        return json.loads(r.content[0].text)
+        return _parse_json(r.content[0].text)
 
     def chat(self, messages: list[dict]) -> str:
         r = self._client.messages.create(
@@ -94,16 +106,15 @@ class OpenAIProvider:
         self._model  = config.openai_model
 
     def analyze(self, scan_data: dict) -> dict:
-        prompt = f"Analyze this recon scan data and return structured findings:\n\n{json.dumps(scan_data, indent=2)}"
         r = self._client.chat.completions.create(
             model=self._model,
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": ANALYSIS_SYSTEM},
-                {"role": "user",   "content": prompt},
+                {"role": "user",   "content": _analysis_prompt(scan_data)},
             ],
         )
-        return json.loads(r.choices[0].message.content)
+        return _parse_json(r.choices[0].message.content)
 
     def chat(self, messages: list[dict]) -> str:
         full = [{"role": "system", "content": CHAT_SYSTEM}] + messages
