@@ -54,8 +54,102 @@ def test_parse_analysis_handles_non_dict_json():
     assert out["risk_level"] in {"low", "medium", "high", "critical"}
 
 
-def test_nmap_parser_extracts_open_ports():
-    sample = "22/tcp open ssh OpenSSH 8.9p1\n80/tcp open http nginx 1.18.0\n"
-    result = nmap_scanner._parse("example.com", sample)
+_NMAP_XML = """<?xml version="1.0"?>
+<nmaprun>
+  <host>
+    <ports>
+      <port protocol="tcp" portid="22">
+        <state state="open"/>
+        <service name="ssh" product="OpenSSH" version="8.9p1"/>
+      </port>
+      <port protocol="tcp" portid="80">
+        <state state="open"/>
+        <service name="http" product="nginx" version="1.18.0"/>
+      </port>
+      <port protocol="tcp" portid="443">
+        <state state="closed"/>
+        <service name="https"/>
+      </port>
+    </ports>
+    <os><osmatch name="Linux 5.X" accuracy="95"/></os>
+  </host>
+</nmaprun>"""
+
+
+def test_nmap_xml_parser_extracts_open_ports():
+    result = nmap_scanner._parse_xml("example.com", _NMAP_XML)
     ports = {p["port"]: p["service"] for p in result.open_ports}
-    assert ports == {22: "ssh", 80: "http"}
+    assert ports == {22: "ssh", 80: "http"}        # closed 443 excluded
+    assert result.os_guess == "Linux 5.X"
+    by_port = {p["port"]: p["version"] for p in result.open_ports}
+    assert by_port[22] == "OpenSSH 8.9p1"
+
+
+def test_nmap_xml_parser_handles_garbage():
+    # Non-XML output must surface an error, not crash the scan.
+    result = nmap_scanner._parse_xml("example.com", "not xml at all")
+    assert result.error is not None
+    assert result.open_ports == []
+
+
+# --- target authorization (SSRF guard) -------------------------------------
+
+def test_authorize_rejects_private_and_loopback():
+    from sentinel.core.authorization import TargetNotAuthorized, authorize_target
+    for bad in ["127.0.0.1", "10.0.0.5", "192.168.1.1", "169.254.169.254"]:
+        with pytest.raises(TargetNotAuthorized):
+            authorize_target(bad)
+
+
+def test_authorize_allows_public_ip_literal():
+    from sentinel.core.authorization import authorize_target
+    # A public IP literal needs no DNS and should pass the address check.
+    assert authorize_target("1.1.1.1") == "1.1.1.1"
+
+
+def test_authorize_cleans_host_from_url():
+    from sentinel.core.authorization import clean_host
+    assert clean_host("https://Example.com:8443/path?x=1") == "example.com"
+
+
+def test_authorize_respects_allowlist(monkeypatch):
+    from sentinel.core import authorization
+    from sentinel.core.config import config
+    monkeypatch.setattr(config, "target_allowlist", "example.com")
+    with pytest.raises(authorization.TargetNotAuthorized):
+        authorization.authorize_target("evil.com")
+    # subdomains of an allowlisted domain are permitted
+    assert authorization._allowed_by_list("api.example.com") is True
+    assert authorization._allowed_by_list("evil.com") is False
+
+
+# --- API auth + rate limiting ----------------------------------------------
+
+def test_api_key_validation():
+    from sentinel.api import security
+    from sentinel.core.config import config
+    # Auth disabled when no key configured.
+    config.api_key = ""
+    assert security.api_key_valid(None) is True
+    # Auth enforced when configured.
+    config.api_key = "s3cret"
+    assert security.api_key_valid("s3cret") is True
+    assert security.api_key_valid("wrong") is False
+    assert security.api_key_valid(None) is False
+    config.api_key = ""
+
+
+def test_extract_api_key_from_headers():
+    from sentinel.api.security import extract_api_key
+    assert extract_api_key({"X-API-Key": "abc"}) == "abc"
+    assert extract_api_key({"Authorization": "Bearer xyz"}) == "xyz"
+    assert extract_api_key({}) is None
+
+
+def test_rate_limiter_blocks_after_limit():
+    from sentinel.api.security import RateLimiter
+    rl = RateLimiter(limit_per_minute=2)
+    assert rl.allow("ip", now=0) is True
+    assert rl.allow("ip", now=0) is True
+    assert rl.allow("ip", now=0) is False      # third in same window blocked
+    assert rl.allow("ip", now=61) is True       # next window resets

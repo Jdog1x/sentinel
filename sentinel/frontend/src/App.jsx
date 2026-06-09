@@ -12,12 +12,28 @@ const SEV = {
 
 const RISK_COLORS = { low: "#00d4aa", medium: "#ffcc00", high: "#ff8800", critical: "#ff4444" };
 
+// API key (used only when the server has SENTINEL_API_KEY set). Persisted
+// locally so it survives reloads; sent as X-API-Key on every request.
+const getApiKey = () => { try { return localStorage.getItem("sentinel_api_key") || ""; } catch { return ""; } };
+const setApiKey = (k) => { try { k ? localStorage.setItem("sentinel_api_key", k) : localStorage.removeItem("sentinel_api_key"); } catch {} };
+
+function authHeaders(extra = {}) {
+  const key = getApiKey();
+  return key ? { ...extra, "X-API-Key": key } : extra;
+}
+
+async function asJson(r) {
+  if (r.status === 401) throw new Error("Unauthorized — set a valid API key.");
+  if (r.status === 429) throw new Error("Rate limited — wait a moment and retry.");
+  return r.json();
+}
+
 const api = {
-  getScans:     ()       => fetch(`${API}/scans`).then(r => r.json()),
-  getScan:      (id)     => fetch(`${API}/scans/${id}`).then(r => r.json()),
-  createScan:   (body)   => fetch(`${API}/scans`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r => r.json()),
-  createReport: (scanId) => fetch(`${API}/scans/${scanId}/report`, { method: "POST" }).then(r => r.json()),
-  chat:         (body)   => fetch(`${API}/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r => r.json()),
+  getScans:     ()       => fetch(`${API}/scans`, { headers: authHeaders() }).then(asJson),
+  getScan:      (id)     => fetch(`${API}/scans/${id}`, { headers: authHeaders() }).then(asJson),
+  createScan:   (body)   => fetch(`${API}/scans`, { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(body) }).then(asJson),
+  createReport: (scanId) => fetch(`${API}/scans/${scanId}/report`, { method: "POST", headers: authHeaders() }).then(asJson),
+  chat:         (body)   => fetch(`${API}/chat`, { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify(body) }).then(asJson),
   health:       ()       => fetch(`${API}/health`).then(r => r.json()),
 };
 
@@ -248,6 +264,7 @@ export default function App() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ color: health ? "#00d4aa" : "#ff4444", fontSize: 11, fontFamily: "monospace" }}>{health ? `API: ${health.llm_backend?.toUpperCase()}` : "API OFFLINE"}</span>
+          <button onClick={() => { const k = window.prompt("API key (leave blank to clear; only needed if the server sets SENTINEL_API_KEY):", getApiKey()); if (k !== null) { setApiKey(k.trim()); loadScans(); } }} title="Set API key" style={{ padding: "6px 12px", background: "transparent", border: `1px solid ${getApiKey() ? "#00d4aa40" : "#30363d"}`, color: getApiKey() ? "#00d4aa" : "#8b949e", borderRadius: 8, cursor: "pointer", fontSize: 11, fontFamily: "monospace" }}>{getApiKey() ? "KEY ✓" : "KEY"}</button>
           <button onClick={() => setShowNew(true)} style={{ padding: "8px 18px", background: "#00d4aa", border: "none", color: "#0d1117", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: 13, fontFamily: "monospace" }}>+ NEW SCAN</button>
         </div>
       </nav>

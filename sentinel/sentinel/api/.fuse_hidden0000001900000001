@@ -142,31 +142,3 @@ def create_app() -> Flask:
         backend  = data.get("llm_backend")
         if not messages:
             return jsonify({"error": "messages are required"}), 400
-        if scan_id:
-            db   = SessionLocal()
-            scan = db.query(Scan).filter(Scan.id == scan_id).first()
-            if scan:
-                ctx = f"\n\n[SCAN CONTEXT - target: {scan.target}]\n"
-                if scan.raw_results and scan.raw_results.get("analysis"):
-                    summary = scan.raw_results.get("analysis", {}).get("executive_summary", "")
-                    ctx += f"Summary: {summary}\n"
-                messages = list(messages)
-                messages[-1]["content"] = ctx + messages[-1]["content"]
-            db.close()
-        try:
-            provider = get_provider(backend)
-            reply    = provider.chat(messages)
-            return jsonify({"reply": reply})
-        except Exception as exc:
-            return jsonify({"error": str(exc)}), 500
-
-    @app.get("/api/health")
-    def health():
-        return jsonify({"status": "ok", "llm_backend": config.llm_backend})
-
-    return app
-
-
-if __name__ == "__main__":
-    app = create_app()
-    app.run(host=config.flask_host, port=config.flask_port, debug=config.flask_debug)

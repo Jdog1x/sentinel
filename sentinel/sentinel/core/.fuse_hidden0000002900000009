@@ -121,8 +121,4 @@ class ScanOrchestrator:
 def _map_severity(s: str) -> Severity:
     return {
         "info":     Severity.INFO,
-        "low":      Severity.LOW,
-        "medium":   Severity.MEDIUM,
-        "high":     Severity.HIGH,
-        "critical": Severity.CRITICAL,
-    }.get(s.lower(), Severity.INFO)
+        "low

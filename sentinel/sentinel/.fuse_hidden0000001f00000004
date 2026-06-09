@@ -171,18 +171,4 @@ def _gen_report(scan_id: str):
     from sentinel.core.models import SessionLocal, Scan
     from sentinel.reports.pdf_generator import generate as gen_pdf
     db   = SessionLocal()
-    scan = db.query(Scan).filter(Scan.id.startswith(scan_id)).first()
-    db.close()
-    if not scan:
-        console.print(f"[red]Scan not found:[/red] {scan_id}")
-        return
-    console.print(f"[cyan]Generating report for[/cyan] {scan.target}...")
-    try:
-        path = gen_pdf(scan)
-        console.print(Panel(f"[bold green]Saved:[/bold green] {path}", title="PDF Report", border_style="green"))
-    except Exception as exc:
-        console.print(f"[red]Failed:[/red] {exc}")
-
-
-if __name__ == "__main__":
-    cli()
+    scan = db.query(Scan).filter(Scan.id.

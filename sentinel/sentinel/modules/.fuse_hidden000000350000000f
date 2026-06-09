@@ -61,38 +61,4 @@ def _service_version(service: Optional[ET.Element]) -> str:
     return " ".join(p for p in parts if p).strip()
 
 
-def _parse_xml(target: str, xml_text: str) -> NmapResult:
-    """Parse nmap -oX output into an NmapResult."""
-    if not xml_text.strip():
-        return NmapResult(target=target, raw_output=xml_text,
-                          error="nmap produced no output")
-    try:
-        root = ET.fromstring(xml_text)
-    except ET.ParseError as exc:
-        return NmapResult(target=target, raw_output=xml_text,
-                          error=f"could not parse nmap XML: {exc}")
-
-    ports: list[dict] = []
-    for port in root.iterfind(".//port"):
-        state = port.find("state")
-        if state is None or state.get("state") != "open":
-            continue
-        service = port.find("service")
-        ports.append({
-            "port":     int(port.get("portid", 0)),
-            "protocol": port.get("protocol", ""),
-            "service":  service.get("name") if service is not None else "",
-            "version":  _service_version(service),
-        })
-
-    os_guess = None
-    osmatch = root.find(".//os/osmatch")
-    if osmatch is not None:
-        os_guess = osmatch.get("name")
-
-    return NmapResult(
-        target=target,
-        open_ports=ports,
-        os_guess=os_guess,
-        raw_output=xml_text,
-    )
+def _parse_xml(target: str, xml_text: str) -> N
